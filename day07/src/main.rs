@@ -1,12 +1,14 @@
 fn part1(inp: &[isize]) -> isize {
-    inp.iter()
+    let max = inp.iter().max().unwrap();
+    (0..*max)
         .map(|dest| inp.iter().map(|loc| (dest - loc).abs()).sum())
         .min()
         .unwrap()
 }
 
 fn part2(inp: &[isize]) -> isize {
-    inp.iter()
+    let max = inp.iter().max().unwrap();
+    (0..*max)
         .map(|dest| {
             inp.iter()
                 .map(|loc| {
