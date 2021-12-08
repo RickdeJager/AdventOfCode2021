@@ -47,10 +47,14 @@ fn segment_value(n: usize) -> Option<usize> {
     }
 }
 
+#[inline(always)]
+fn idx(c: char) -> usize {
+    c as usize - 'a' as usize
+}
+
 fn part2(notes: &[Note]) -> usize {
-    // Re-use the same set and hashmap allocations
+    // Re-use the same set allocation
     let mut set = std::collections::HashSet::new();
-    let mut lut = std::collections::HashMap::new();
     let mut ret = 0usize;
     for note in notes {
         // As we progress, add known mappings to this lut.
@@ -63,9 +67,9 @@ fn part2(notes: &[Note]) -> usize {
         //    e    f    4    5
         //     gggg      6666
         //
+        let mut lut = [None; 7];
         let mut lut_inv = [None; 7];
         set.clear();
-        lut.clear();
 
         let one;
         let four;
@@ -84,7 +88,7 @@ fn part2(notes: &[Note]) -> usize {
         seven = note.0.iter().find(|a| a.len() == 3).unwrap();
         seven.chars().for_each(|c| {
             if set.insert(c) {
-                lut.insert(c, 1 << 0);
+                lut[idx(c)] = Some(0);
                 lut_inv[0] = Some(c);
             }
         });
@@ -105,10 +109,10 @@ fn part2(notes: &[Note]) -> usize {
                 });
                 for c in one.chars() {
                     if set.insert(c) {
-                        lut.insert(c, 1 << 2);
+                        lut[idx(c)] = Some(2);
                         lut_inv[2] = Some(c);
                     } else {
-                        lut.insert(c, 1 << 5);
+                        lut[idx(c)] = Some(5);
                         lut_inv[5] = Some(c);
                     }
                 }
@@ -127,7 +131,7 @@ fn part2(notes: &[Note]) -> usize {
                 set.insert(lut_inv[5].unwrap());
                 for c in four.chars() {
                     if set.insert(c) {
-                        lut.insert(c, 1 << 1);
+                        lut[idx(c)] = Some(1);
                         lut_inv[1] = Some(c);
                     }
                 }
@@ -145,7 +149,7 @@ fn part2(notes: &[Note]) -> usize {
         });
         for c in four.chars() {
             if set.insert(c) {
-                lut.insert(c, 1 << 3);
+                lut[idx(c)] = Some(3);
                 lut_inv[3] = Some(c);
             }
         }
@@ -153,7 +157,7 @@ fn part2(notes: &[Note]) -> usize {
         // Next, add 5 to the working set, resulting in one new addition.
         for c in five.unwrap().chars() {
             if set.insert(c) {
-                lut.insert(c, 1 << 6);
+                lut[idx(c)] = Some(6);
                 lut_inv[6] = Some(c);
             }
         }
@@ -167,7 +171,7 @@ fn part2(notes: &[Note]) -> usize {
         });
         for c in eight.chars() {
             if set.insert(c) {
-                lut.insert(c, 1 << 4);
+                lut[idx(c)] = Some(4);
                 lut_inv[4] = Some(c);
             }
         }
@@ -178,7 +182,7 @@ fn part2(notes: &[Note]) -> usize {
             .rev()
             .enumerate()
             .map(|(i, digit)| {
-                segment_value(digit.chars().map(|c| *lut.get(&c).unwrap()).sum()).unwrap()
+                segment_value(digit.chars().map(|c| 1 << lut[idx(c)].unwrap()).sum()).unwrap()
                     * 10usize.pow(i as u32)
             })
             .sum::<usize>();
@@ -194,10 +198,7 @@ fn part2_brute(notes: &[Note]) -> usize {
         let values = [0, 1, 2, 3, 4, 5, 6];
         let lut = values.iter().permutations(values.len()).find(|lut| {
             note.0.iter().all(|pattern| {
-                let v = pattern
-                    .chars()
-                    .map(|c| 1 << lut[(c as usize - 'a' as usize)])
-                    .sum::<usize>();
+                let v = pattern.chars().map(|c| 1 << lut[idx(c)]).sum::<usize>();
                 segment_value(v).is_some()
             })
         });
@@ -210,13 +211,7 @@ fn part2_brute(notes: &[Note]) -> usize {
             .rev()
             .enumerate()
             .map(|(i, digit)| {
-                segment_value(
-                    digit
-                        .chars()
-                        .map(|c| 1 << lut[(c as usize - 'a' as usize)])
-                        .sum(),
-                )
-                .unwrap()
+                segment_value(digit.chars().map(|c| 1 << lut[idx(c)]).sum()).unwrap()
                     * 10usize.pow(i as u32)
             })
             .sum::<usize>();
@@ -241,4 +236,9 @@ fn main() {
         "Part 2b: {:10} (took {:9.3} ms)",
         part2_brute, time_p2_brute
     );
+
+    // Trial run:
+    // Part 1 :        362 (took     1.370 μs)
+    // Part 2 :    1020159 (took   419.134 μs)
+    // Part 2b:    1020159 (took    29.356 ms)
 }
